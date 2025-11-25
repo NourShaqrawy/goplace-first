@@ -13,9 +13,57 @@ class ServiceController extends Controller
     {
         $services = Service::where('is_approved', true)
             ->where('capacity', '>', 0)
-            ->get();
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id'          => $service->id,
+                    'name'        => $service->name,
+                    'description' => $service->description,
+                    'price'       => $service->price,
+                    'capacity'    => $service->capacity,
+                    'provider_id' => $service->provider_id,
+                    'category_id' => $service->category_id,
+                    'is_approved' => $service->is_approved,
+                    'image_url'   => $service->image_url,
+                    'created_at'  => $service->created_at,
+                    'updated_at'  => $service->updated_at,
+                ];
+            });
 
-        return response()->json($services);
+        return response()->json([
+            'message' => 'Approved services list',
+            'data'    => $services
+        ]);
+    }
+
+    public function show($id)
+    {
+
+        $service = Service::where('id', $id)
+            ->where('is_approved', true)
+            ->where('capacity', '>', 0)
+            ->first();
+
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Service proposed successfully, pending approval',
+            'data' => [
+                'id' => $service->id,
+                'name' => $service->name,
+                'description' => $service->description,
+                'price' => $service->price,
+                'capacity' => $service->capacity,
+                'provider_id' => $service->provider_id,
+                'category_id' => $service->category_id,
+                'is_approved' => $service->is_approved,
+                'image_url' => $service->image_url, // هنا يظهر الرابط الكامل
+                'created_at' => $service->created_at,
+                'updated_at' => $service->updated_at,
+            ]
+        ]);
     }
 
     public function myServices()
@@ -44,8 +92,11 @@ class ServiceController extends Controller
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
             'capacity' => 'required|integer|min:1',
+            'image' => 'required|image',
             'category_id' => 'required|exists:categories,id',
         ]);
+        $path = $request->file('image')->store('services', 'public');
+
 
         $service = Service::create([
             'name' => $request->name,
@@ -54,16 +105,18 @@ class ServiceController extends Controller
             'capacity' => $request->capacity,
             'provider_id' => $user->id,
             'category_id' => $request->category_id,
-            'is_approved' => false, 
+            'is_approved' => false,
+            'image' => $path,
         ]);
 
         return response()->json([
             'message' => 'Service proposed successfully, pending approval',
             'data' => $service,
+            'image' => $path
         ], 201);
     }
 
-  
+
     public function approve($id)
     {
         $user = Auth::user();
@@ -84,7 +137,7 @@ class ServiceController extends Controller
         return response()->json(['message' => 'Service approved']);
     }
 
- 
+
     // public function book($id)
     // {
     //     $user = Auth::user();

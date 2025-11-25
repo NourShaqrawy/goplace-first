@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description');
             $table->decimal('price', 8, 2);
             $table->integer('capacity')->default(1);
+            $table->string('image')->nullable();
 
 
             $table->foreignId('provider_id')->constrained('users');

@@ -11,7 +11,7 @@ class Service extends Model
 {
 protected $fillable = [
         'name', 'description', 'price', 'capacity',
-        'provider_id', 'category_id', 'is_approved',
+        'provider_id', 'category_id', 'is_approved','image',
     ];
 public function category(): BelongsTo
 {
@@ -32,4 +32,9 @@ public function slots(): HasMany
 {
     return $this->hasMany(ServiceSlot::class);
 }
+public function getImageUrlAttribute()
+{
+    return $this->image ? asset('storage/' . $this->image) : null;
+}
+
 }

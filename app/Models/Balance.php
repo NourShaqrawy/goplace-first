@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Balance extends Model
 {
-protected $fillable = ['user_id'];
+protected $fillable = ['user_id','current_balance'];
 public function user(): BelongsTo
 {
     return $this->belongsTo(User::class);
