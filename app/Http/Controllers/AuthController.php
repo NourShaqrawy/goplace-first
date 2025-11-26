@@ -1,8 +1,8 @@
 <?php
-// app/Http/Controllers/AuthController.php
 
 namespace App\Http\Controllers;
 
+use App\Models\Balance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -19,20 +19,29 @@ class AuthController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
+
         $user = User::create([
             'name' => $request->name,
             'role' => 'user',
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
+
         ]);
+
+
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $balance = Balance::create([
+            'user_id' => $user->id,
+            'current_balance' => 0
+        ]);
         return response()->json([
             'message' => 'User registered successfully',
             'access_token' => $token,
             'user' => $user,
+            'balance' => $balance->current_balance
         ]);
     }
 
@@ -48,8 +57,8 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-        
-        
+
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
 use App\Models\Service;
+use App\Models\User;
+use Exception;
+
+
+
 
 class BookingController extends Controller
 {
@@ -27,6 +32,20 @@ class BookingController extends Controller
             ->where('is_approved', true)
             ->first();
 
+        try {
+            $service_provider = User::find($service->provider_id);
+
+            if (!$service_provider) {
+                throw new Exception("المزود غير موجود");
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => "الخدمة لم يتم الموافقة عليها او انه تم حذفها"], 404);
+        }
+
+        if (!$service_provider) {
+            return response()->json(['message' => 'Service Provider is not found'], 404);
+        }
+
         if (!$service) {
             return response()->json(['message' => 'Service not found or not approved'], 404);
         }
@@ -46,6 +65,15 @@ class BookingController extends Controller
         if ($balance->current_balance < $service->price) {
             return response()->json(['message' => 'Insufficient balance'], 400);
         }
+
+
+        $providerBalance = Balance::firstOrCreate(
+            ['user_id' => $service_provider->id],
+            ['current_balance' => 0]
+        );
+
+        $providerBalance->current_balance += $service->price;
+        $providerBalance->save();
         $balance->current_balance -= $service->price;
         $balance->save();
         $service->capacity -= 1;

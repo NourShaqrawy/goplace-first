@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Storage;
 
 class TopupController extends Controller
 {
-    // المستخدم يرفع طلب شحن رصيد
     public function store(Request $request)
     {
         $request->validate([
@@ -24,7 +23,7 @@ class TopupController extends Controller
         }
 
         $topup = Topup::create([
-            'user_id' => auth()->id(), // 🔹 أخذ الـ id من الـ token
+            'user_id' => auth()->id(),
             'amount' => $request->amount,
             'method' => $request->method,
             'receipt_image' => $path,
@@ -37,7 +36,6 @@ class TopupController extends Controller
         ], 201);
     }
 
-    // الأدمن يوافق على الطلب ويضيف الرصيد
     public function approve($id)
     {
         $topup = Topup::findOrFail($id);
@@ -46,11 +44,9 @@ class TopupController extends Controller
             return response()->json(['message' => 'Topup already processed'], 400);
         }
 
-        // تحديث حالة الطلب
         $topup->status = 'approved';
         $topup->save();
 
-        // تحديث رصيد المستخدم
         $balance = Balance::firstOrCreate(
             ['user_id' => $topup->user_id],
             ['current_balance' => 0.00]
@@ -68,7 +64,6 @@ class TopupController extends Controller
         ]);
     }
 
-    // الأدمن يرفض الطلب
     public function reject($id)
     {
         $topup = Topup::findOrFail($id);
@@ -86,7 +81,6 @@ class TopupController extends Controller
         ]);
     }
 
-    // عرض كل طلبات الشحن (لأدمن)
     public function index()
 {
     $topups = Topup::with('user')->latest()->get()->map(function ($topup) {

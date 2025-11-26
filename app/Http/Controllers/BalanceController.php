@@ -4,10 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Balance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BalanceController extends Controller
 {
-    // عرض رصيد مستخدم محدد
+    public function index()
+    {
+        $balances = Balance::with('user')->get();
+
+        return response()->json([
+            'message' => 'All balances retrieved successfully',
+            'data' => $balances
+        ]);
+    }
+
     public function show($userId)
     {
         $balance = Balance::where('user_id', $userId)->first();
@@ -22,54 +32,56 @@ class BalanceController extends Controller
         ]);
     }
 
-    // إنشاء رصيد جديد لمستخدم (عادة عند التسجيل أو من قبل الأدمن)
-    public function store(Request $request)
+    public function myBalance()
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id|unique:balances,user_id',
-            'current_balance' => 'numeric|min:0'
-        ]);
+        $user = Auth::user();
 
-        $balance = Balance::create([
-            'user_id' => $request->user_id,
-            'current_balance' => $request->current_balance ?? 0.00,
-        ]);
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
 
-        return response()->json([
-            'message' => 'Balance created successfully',
-            'data' => $balance
-        ], 201);
-    }
-
-    // تحديث الرصيد (إيداع أو سحب)
-    public function update(Request $request, $userId)
-    {
-        $balance = Balance::where('user_id', $userId)->first();
+        $balance = Balance::where('user_id', $user->id)->first();
 
         if (!$balance) {
             return response()->json(['message' => 'Balance not found'], 404);
         }
 
-        $request->validate([
-            'amount' => 'required|numeric'
-        ]);
-
-        $newBalance = $balance->current_balance + $request->amount;
-
-        if ($newBalance < 0) {
-            return response()->json(['message' => 'Insufficient balance'], 400);
-        }
-
-        $balance->current_balance = $newBalance;
-        $balance->save();
-
         return response()->json([
-            'message' => 'Balance updated successfully',
+            'message' => 'Your balance retrieved successfully',
             'data' => $balance
         ]);
     }
 
-    // حذف رصيد مستخدم (نادراً ما تحتاجه)
+    public function saveBalance(Request $request, $userId)
+{
+    $request->validate([
+        'amount' => 'required|numeric' // يمكن أن تكون موجبة أو سالبة
+    ]);
+
+    // البحث عن الرصيد أو إنشاؤه إذا لم يوجد
+    $balance = Balance::firstOrCreate(
+        ['user_id' => $userId],
+        ['current_balance' => 0.00]
+    );
+
+    $newBalance = $balance->current_balance + $request->amount;
+
+    if ($newBalance < 0) {
+        return response()->json(['message' => 'Insufficient balance'], 400);
+    }
+
+    $balance->current_balance = $newBalance;
+    $balance->save();
+
+    return response()->json([
+        'message' => $balance->wasRecentlyCreated 
+            ? 'Balance created successfully' 
+            : 'Balance updated successfully',
+        'data' => $balance
+    ], $balance->wasRecentlyCreated ? 201 : 200);
+}
+
+
     public function destroy($userId)
     {
         $balance = Balance::where('user_id', $userId)->first();
