@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('services', function (Blueprint $table) {
@@ -17,22 +14,18 @@ return new class extends Migration
             $table->string('name');
             $table->text('description');
 
-            // تغيير price إلى fullPrice
             $table->decimal('fullPrice', 8, 2);
+            $table->decimal('book_price', 8, 2);
 
-            // تعديل الحقول الخاصة بالصور
-            $table->string('mainImage')->nullable();     // الصورة الرئيسية
-            $table->json('other_Images')->nullable();     // مجموعة صور إضافية
+            $table->string('main_image')->nullable();      // الصورة الرئيسية
+            $table->json('other_images')->nullable();      // الصور الإضافية (JSON Array)
 
-            // الحقول الجديدة
-            $table->text('city');
-            $table->text('location');
+            $table->string('city');
+            $table->string('location');
 
             $table->string('time_to_complete');
             $table->json('available_days');
             $table->json('available_hours');
-
-            $table->decimal('book_price', 8, 2);
 
             $table->foreignId('provider_id')->constrained('users');
             $table->foreignId('category_id')->constrained('categories');
@@ -43,9 +36,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('services');

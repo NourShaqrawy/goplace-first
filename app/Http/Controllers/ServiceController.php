@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Service;
 
 class ServiceController extends Controller
 {
@@ -14,29 +14,29 @@ class ServiceController extends Controller
             ->get()
             ->map(function ($service) {
                 return [
-                    'id' => $service->id,
-                    'name' => $service->name,
-                    'description' => $service->description,
-                    'fullPrice' => $service->fullPrice,
-                    'book_price' => $service->book_price,
-                    'city' => $service->city,
-                    'location' => $service->location,
-                    'time_to_complete' => $service->time_to_complete,
-                    'available_days' => $service->available_days,
+                    'id'              => $service->id,
+                    'name'            => $service->name,
+                    'description'     => $service->description,
+                    'fullPrice'       => $service->fullPrice,
+                    'book_price'      => $service->book_price,
+                    'city'            => $service->city,
+                    'location'        => $service->location,
+                    'time_to_complete'=> $service->time_to_complete,
+                    'available_days'  => $service->available_days,
                     'available_hours' => $service->available_hours,
-                    'provider_id' => $service->provider_id,
-                    'category_id' => $service->category_id,
-                    'is_approved' => $service->is_approved,
-                    'mainImage' => $service->main_image_url,
-                    'otherImages' => $service->other_images_url,
-                    'created_at' => $service->created_at,
-                    'updated_at' => $service->updated_at,
+                    'provider_id'     => $service->provider_id,
+                    'category_id'     => $service->category_id,
+                    'is_approved'     => $service->is_approved,
+                    'mainImage'       => $service->main_image_url,
+                    'otherImages'     => $service->other_images_url,
+                    'created_at'      => $service->created_at,
+                    'updated_at'      => $service->updated_at,
                 ];
             });
 
         return response()->json([
             'message' => 'Approved services list',
-            'data' => $services
+            'data'    => $services,
         ]);
     }
 
@@ -52,25 +52,25 @@ class ServiceController extends Controller
 
         return response()->json([
             'message' => 'Service details',
-            'data' => [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description,
-                'fullPrice' => $service->fullPrice,
-                'book_price' => $service->book_price,
-                'city' => $service->city,
-                'location' => $service->location,
-                'time_to_complete' => $service->time_to_complete,
-                'available_days' => $service->available_days,
+            'data'    => [
+                'id'              => $service->id,
+                'name'            => $service->name,
+                'description'     => $service->description,
+                'fullPrice'       => $service->fullPrice,
+                'book_price'      => $service->book_price,
+                'city'            => $service->city,
+                'location'        => $service->location,
+                'time_to_complete'=> $service->time_to_complete,
+                'available_days'  => $service->available_days,
                 'available_hours' => $service->available_hours,
-                'provider_id' => $service->provider_id,
-                'category_id' => $service->category_id,
-                'is_approved' => $service->is_approved,
-                'mainImage' => $service->main_image_url,
-                'otherImages' => $service->other_images_url,
-                'created_at' => $service->created_at,
-                'updated_at' => $service->updated_at,
-            ]
+                'provider_id'     => $service->provider_id,
+                'category_id'     => $service->category_id,
+                'is_approved'     => $service->is_approved,
+                'mainImage'       => $service->main_image_url,
+                'otherImages'     => $service->other_images_url,
+                'created_at'      => $service->created_at,
+                'updated_at'      => $service->updated_at,
+            ],
         ]);
     }
 
@@ -82,9 +82,34 @@ class ServiceController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        return response()->json(
-            Service::where('provider_id', $user->id)->get()
-        );
+        $services = Service::where('provider_id', $user->id)
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id'              => $service->id,
+                    'name'            => $service->name,
+                    'description'     => $service->description,
+                    'fullPrice'       => $service->fullPrice,
+                    'book_price'      => $service->book_price,
+                    'city'            => $service->city,
+                    'location'        => $service->location,
+                    'time_to_complete'=> $service->time_to_complete,
+                    'available_days'  => $service->available_days,
+                    'available_hours' => $service->available_hours,
+                    'provider_id'     => $service->provider_id,
+                    'category_id'     => $service->category_id,
+                    'is_approved'     => $service->is_approved,
+                    'mainImage'       => $service->main_image_url,
+                    'otherImages'     => $service->other_images_url,
+                    'created_at'      => $service->created_at,
+                    'updated_at'      => $service->updated_at,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'My services',
+            'data'    => $services,
+        ]);
     }
 
     public function store(Request $request)
@@ -96,24 +121,25 @@ class ServiceController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string',
-            'description' => 'required|string',
-            'fullPrice' => 'required|numeric|min:0',
-            'book_price' => 'required|numeric|min:0',
-            'city' => 'required|string',
-            'location' => 'required|string',
+            'name'             => 'required|string',
+            'description'      => 'required|string',
+            'fullPrice'        => 'required|numeric|min:0',
+            'book_price'       => 'required|numeric|min:0',
+            'city'             => 'required|string',
+            'location'         => 'required|string',
             'time_to_complete' => 'required|string',
-            'available_days' => 'required|array',
-            'available_hours' => 'required|array',
-            'mainImage' => 'required|image',
-            'otherImages.*' => 'image',
-            'category_id' => 'required|exists:categories,id',
+            'available_days'   => 'required|array',
+            'available_hours'  => 'required|array',
+            'mainImage'        => 'required|image',
+            'otherImages'      => 'array',
+            'otherImages.*'    => 'image',
+            'category_id'      => 'required|exists:categories,id',
         ]);
 
-        // رفع الصورة الرئيسية
+        // الصورة الرئيسية
         $mainImagePath = $request->file('mainImage')->store('services', 'public');
 
-        // رفع الصور الإضافية
+        // الصور الإضافية
         $otherImagesPaths = [];
         if ($request->hasFile('otherImages')) {
             foreach ($request->file('otherImages') as $img) {
@@ -122,25 +148,30 @@ class ServiceController extends Controller
         }
 
         $service = Service::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'fullPrice' => $request->fullPrice,
-            'book_price' => $request->book_price,
-            'city' => $request->city,
-            'location' => $request->location,
+            'name'             => $request->name,
+            'description'      => $request->description,
+            'fullPrice'        => $request->fullPrice,
+            'book_price'       => $request->book_price,
+            'city'             => $request->city,
+            'location'         => $request->location,
             'time_to_complete' => $request->time_to_complete,
-            'available_days' => $request->available_days,
-            'available_hours' => $request->available_hours,
-            'provider_id' => $user->id,
-            'category_id' => $request->category_id,
-            'is_approved' => false,
-            'mainImage' => $mainImagePath,
-            'other_Images' => $otherImagesPaths,
+            'available_days'   => $request->available_days,
+            'available_hours'  => $request->available_hours,
+            'provider_id'      => $user->id,
+            'category_id'      => $request->category_id,
+            'is_approved'      => false,
+            'main_image'       => $mainImagePath,
+            'other_images'     => $otherImagesPaths,
         ]);
 
         return response()->json([
             'message' => 'Service proposed successfully, pending approval',
-            'data' => $service
+            'data'    => [
+                'id'          => $service->id,
+                'name'        => $service->name,
+                'mainImage'   => $service->main_image_url,
+                'otherImages' => $service->other_images_url,
+            ],
         ], 201);
     }
 

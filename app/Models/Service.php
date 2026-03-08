@@ -6,32 +6,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
 class Service extends Model
 {
-
     protected $fillable = [
         'name',
         'description',
         'fullPrice',
-        'mainImage',
-        'other_Images',
+        'book_price',
+        'main_image',
+        'other_images',
         'city',
         'location',
         'time_to_complete',
         'available_days',
         'available_hours',
-        'book_price',
         'provider_id',
         'category_id',
         'is_approved',
     ];
 
     protected $casts = [
-        'available_days' => 'array',
-        'available_hours' => 'array',
-        'otherImages' => 'array',
+        'available_days'   => 'array',
+        'available_hours'  => 'array',
+        'other_images'     => 'array',
+        'is_approved'      => 'boolean',
     ];
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -52,15 +52,24 @@ class Service extends Model
         return $this->hasMany(ServiceSlot::class);
     }
 
+    // رابط الصورة الرئيسية
     public function getMainImageUrlAttribute()
     {
-        return $this->mainImage ? asset('storage/' . $this->mainImage) : null;
+        return $this->main_image
+            ? asset('storage/' . $this->main_image)
+            : null;
     }
 
+    // روابط الصور الإضافية
     public function getOtherImagesUrlAttribute()
     {
-        if (!$this->other_images) return [];
+        if (!$this->other_images || !is_array($this->other_images)) {
+            return [];
+        }
 
-        return array_map(fn($img) => asset('storage/' . $img), $this->other_images);
+        return array_map(
+            fn ($img) => asset('storage/' . $img),
+            $this->other_images
+        );
     }
 }
