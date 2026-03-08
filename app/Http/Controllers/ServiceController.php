@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/ServiceController.php
 
 namespace App\Http\Controllers;
 
@@ -12,36 +11,39 @@ class ServiceController extends Controller
     public function index()
     {
         $services = Service::where('is_approved', true)
-            ->where('capacity', '>', 0)
             ->get()
             ->map(function ($service) {
                 return [
-                    'id'          => $service->id,
-                    'name'        => $service->name,
+                    'id' => $service->id,
+                    'name' => $service->name,
                     'description' => $service->description,
-                    'price'       => $service->price,
-                    'capacity'    => $service->capacity,
+                    'fullPrice' => $service->fullPrice,
+                    'book_price' => $service->book_price,
+                    'city' => $service->city,
+                    'location' => $service->location,
+                    'time_to_complete' => $service->time_to_complete,
+                    'available_days' => $service->available_days,
+                    'available_hours' => $service->available_hours,
                     'provider_id' => $service->provider_id,
                     'category_id' => $service->category_id,
                     'is_approved' => $service->is_approved,
-                    'image_url'   => $service->image_url,
-                    'created_at'  => $service->created_at,
-                    'updated_at'  => $service->updated_at,
+                    'mainImage' => $service->main_image_url,
+                    'otherImages' => $service->other_images_url,
+                    'created_at' => $service->created_at,
+                    'updated_at' => $service->updated_at,
                 ];
             });
 
         return response()->json([
             'message' => 'Approved services list',
-            'data'    => $services
+            'data' => $services
         ]);
     }
 
     public function show($id)
     {
-
         $service = Service::where('id', $id)
             ->where('is_approved', true)
-            ->where('capacity', '>', 0)
             ->first();
 
         if (!$service) {
@@ -49,17 +51,23 @@ class ServiceController extends Controller
         }
 
         return response()->json([
-            'message' => 'Service proposed successfully, pending approval',
+            'message' => 'Service details',
             'data' => [
                 'id' => $service->id,
                 'name' => $service->name,
                 'description' => $service->description,
-                'price' => $service->price,
-                'capacity' => $service->capacity,
+                'fullPrice' => $service->fullPrice,
+                'book_price' => $service->book_price,
+                'city' => $service->city,
+                'location' => $service->location,
+                'time_to_complete' => $service->time_to_complete,
+                'available_days' => $service->available_days,
+                'available_hours' => $service->available_hours,
                 'provider_id' => $service->provider_id,
                 'category_id' => $service->category_id,
                 'is_approved' => $service->is_approved,
-                'image_url' => $service->image_url, // هنا يظهر الرابط الكامل
+                'mainImage' => $service->main_image_url,
+                'otherImages' => $service->other_images_url,
                 'created_at' => $service->created_at,
                 'updated_at' => $service->updated_at,
             ]
@@ -74,9 +82,9 @@ class ServiceController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $services = Service::where('provider_id', $user->id)->get();
-
-        return response()->json($services);
+        return response()->json(
+            Service::where('provider_id', $user->id)->get()
+        );
     }
 
     public function store(Request $request)
@@ -90,32 +98,51 @@ class ServiceController extends Controller
         $request->validate([
             'name' => 'required|string',
             'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'capacity' => 'required|integer|min:1',
-            'image' => 'required|image',
+            'fullPrice' => 'required|numeric|min:0',
+            'book_price' => 'required|numeric|min:0',
+            'city' => 'required|string',
+            'location' => 'required|string',
+            'time_to_complete' => 'required|string',
+            'available_days' => 'required|array',
+            'available_hours' => 'required|array',
+            'mainImage' => 'required|image',
+            'otherImages.*' => 'image',
             'category_id' => 'required|exists:categories,id',
         ]);
-        $path = $request->file('image')->store('services', 'public');
 
+        // رفع الصورة الرئيسية
+        $mainImagePath = $request->file('mainImage')->store('services', 'public');
+
+        // رفع الصور الإضافية
+        $otherImagesPaths = [];
+        if ($request->hasFile('otherImages')) {
+            foreach ($request->file('otherImages') as $img) {
+                $otherImagesPaths[] = $img->store('services', 'public');
+            }
+        }
 
         $service = Service::create([
             'name' => $request->name,
             'description' => $request->description,
-            'price' => $request->price,
-            'capacity' => $request->capacity,
+            'fullPrice' => $request->fullPrice,
+            'book_price' => $request->book_price,
+            'city' => $request->city,
+            'location' => $request->location,
+            'time_to_complete' => $request->time_to_complete,
+            'available_days' => $request->available_days,
+            'available_hours' => $request->available_hours,
             'provider_id' => $user->id,
             'category_id' => $request->category_id,
             'is_approved' => false,
-            'image' => $path,
+            'mainImage' => $mainImagePath,
+            'otherImages' => $otherImagesPaths,
         ]);
 
         return response()->json([
             'message' => 'Service proposed successfully, pending approval',
-            'data' => $service,
-            'image' => $path
+            'data' => $service
         ], 201);
     }
-
 
     public function approve($id)
     {
@@ -136,29 +163,4 @@ class ServiceController extends Controller
 
         return response()->json(['message' => 'Service approved']);
     }
-
-
-    // public function book($id)
-    // {
-    //     $user = Auth::user();
-
-    //     if (!$user) {
-    //         return response()->json(['message' => 'Unauthenticated'], 401);
-    //     }
-
-    //     $service = Service::where('is_approved', true)->find($id);
-
-    //     if (!$service) {
-    //         return response()->json(['message' => 'Service not found or not approved'], 404);
-    //     }
-
-    //     if ($service->capacity < 1) {
-    //         return response()->json(['message' => 'Service is fully booked'], 400);
-    //     }
-
-    //     $service->capacity -= 1;
-    //     $service->save();
-
-    //     return response()->json(['message' => 'Service booked successfully']);
-    // }
 }

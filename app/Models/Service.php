@@ -9,32 +9,60 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
-protected $fillable = [
-        'name', 'description', 'price', 'capacity',
-        'provider_id', 'category_id', 'is_approved','image',
+
+    protected $fillable = [
+        'name',
+        'description',
+        'fullPrice',
+        'mainImage',
+        'otherImages',
+        'city',
+        'location',
+        'time_to_complete',
+        'available_days',
+        'available_hours',
+        'book_price',
+        'provider_id',
+        'category_id',
+        'is_approved',
     ];
-public function category(): BelongsTo
-{
-    return $this->belongsTo(Category::class);
-}
 
-public function provider(): BelongsTo
-{
-    return $this->belongsTo(User::class, 'provider_id'); 
-}
+    protected $casts = [
+        'available_days' => 'array',
+        'available_hours' => 'array',
+        'otherImages' => 'array',
+    ];
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 
-public function bookings(): HasMany
-{
-    return $this->hasMany(Booking::class);
-}
+    public function provider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'provider_id');
+    }
 
-public function slots(): HasMany
-{
-    return $this->hasMany(ServiceSlot::class);
-}
-public function getImageUrlAttribute()
-{
-    return $this->image ? asset('storage/' . $this->image) : null;
-}
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 
-}
+    public function slots(): HasMany
+    {
+        return $this->hasMany(ServiceSlot::class);
+    }
+   
+    public function getMainImageUrlAttribute()
+    {
+        return $this->mainImage ? asset('storage/' . $this->mainImage) : null;
+    }
+
+    // روابط الصور الإضافية
+    public function getOtherImagesUrlAttribute()
+    {
+        if (!$this->otherImages) return [];
+
+        return array_map(function ($img) {
+            return asset('storage/' . $img);
+        }, $this->otherImages);
+}}

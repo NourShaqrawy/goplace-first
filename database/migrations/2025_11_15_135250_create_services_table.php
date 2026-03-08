@@ -13,17 +13,29 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
             $table->text('description');
-            $table->decimal('price', 8, 2);
-            $table->integer('capacity')->default(1);
-            $table->string('image')->nullable();
 
+            // تغيير price إلى fullPrice
+            $table->decimal('fullPrice', 8, 2);
+
+            // تعديل الحقول الخاصة بالصور
+            $table->string('mainImage')->nullable();     // الصورة الرئيسية
+            $table->json('otherImages')->nullable();     // مجموعة صور إضافية
+
+            // الحقول الجديدة
+            $table->text('city');
+            $table->text('location');
+
+            $table->string('time_to_complete');
+            $table->json('available_days');
+            $table->json('available_hours');
+
+            $table->decimal('book_price', 8, 2);
 
             $table->foreignId('provider_id')->constrained('users');
-
             $table->foreignId('category_id')->constrained('categories');
-
 
             $table->boolean('is_approved')->default(false);
 
