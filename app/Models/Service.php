@@ -15,7 +15,7 @@ class Service extends Model
         'description',
         'fullPrice',
         'mainImage',
-        'otherImages',
+        'other_Images',
         'city',
         'location',
         'time_to_complete',
@@ -51,18 +51,16 @@ class Service extends Model
     {
         return $this->hasMany(ServiceSlot::class);
     }
-   
+
     public function getMainImageUrlAttribute()
     {
         return $this->mainImage ? asset('storage/' . $this->mainImage) : null;
     }
 
-    // روابط الصور الإضافية
     public function getOtherImagesUrlAttribute()
     {
-        if (!$this->otherImages) return [];
+        if (!$this->other_images) return [];
 
-        return array_map(function ($img) {
-            return asset('storage/' . $img);
-        }, $this->otherImages);
-}}
+        return array_map(fn($img) => asset('storage/' . $img), $this->other_images);
+    }
+}

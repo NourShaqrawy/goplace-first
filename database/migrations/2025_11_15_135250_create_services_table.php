@@ -22,7 +22,7 @@ return new class extends Migration
 
             // تعديل الحقول الخاصة بالصور
             $table->string('mainImage')->nullable();     // الصورة الرئيسية
-            $table->json('otherImages')->nullable();     // مجموعة صور إضافية
+            $table->json('other_Images')->nullable();     // مجموعة صور إضافية
 
             // الحقول الجديدة
             $table->text('city');

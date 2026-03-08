@@ -135,7 +135,7 @@ class ServiceController extends Controller
             'category_id' => $request->category_id,
             'is_approved' => false,
             'mainImage' => $mainImagePath,
-            'otherImages' => $otherImagesPaths,
+            'other_Images' => $otherImagesPaths,
         ]);
 
         return response()->json([
