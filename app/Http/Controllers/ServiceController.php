@@ -231,4 +231,100 @@ class ServiceController extends Controller
             'data'    => $services,
         ]);
     }
+    public function update(Request $request, $id)
+{
+    // 1) جلب الخدمة
+    $service = Service::findOrFail($id);
+
+    // 2) التحقق أن المستخدم الحالي هو صاحب الخدمة
+    if ($service->provider_id !== Auth::id()) {
+        return response()->json([
+            'message' => 'غير مسموح لك بتعديل هذه الخدمة'
+        ], 403);
+    }
+
+    // 3) التحقق من البيانات
+    $validated = $request->validate([
+        'name' => 'sometimes|string|max:255',
+        'description' => 'sometimes|string',
+
+        'fullPrice' => 'sometimes|numeric|min:0',
+        'book_price' => 'sometimes|numeric|min:0',
+
+        'main_image' => 'sometimes|image|mimes:jpg,jpeg,png|max:2048',
+        'other_images.*' => 'sometimes|image|mimes:jpg,jpeg,png|max:2048',
+
+        'city' => 'sometimes|string|max:255',
+        'location' => 'sometimes|string|max:255',
+
+        'time_to_complete' => 'sometimes|string|max:255',
+        'available_days' => 'sometimes|array',
+        'available_hours' => 'sometimes|array',
+
+        'category_id' => 'sometimes|exists:categories,id',
+    ]);
+
+    // 4) تحديث الصورة الرئيسية إن وُجدت
+    if ($request->hasFile('main_image')) {
+        $path = $request->file('main_image')->store('services/main', 'public');
+        $validated['main_image'] = $path;
+    }
+
+    // 5) تحديث الصور الإضافية إن وُجدت
+    if ($request->hasFile('other_images')) {
+        $paths = [];
+        foreach ($request->file('other_images') as $image) {
+            $paths[] = $image->store('services/others', 'public');
+        }
+        $validated['other_images'] = json_encode($paths);
+    }
+
+    // 6) عند أي تعديل → تصبح الخدمة غير معتمدة
+    $validated['is_approved'] = false;
+
+    // 7) تحديث البيانات
+    $service->update($validated);
+
+    return response()->json([
+        'message' => 'تم تحديث الخدمة بنجاح، وتم تحويلها إلى غير معتمدة بانتظار المراجعة',
+        'service' => $service
+    ]);
+}
+public function destroy($id)
+{
+    // 1) جلب الخدمة
+    $service = Service::findOrFail($id);
+
+    // 2) إذا كان المستخدم Admin → مسموح له الحذف مباشرة
+    if (Auth::user()->role === 'admin') {
+        $service->delete();
+
+        return response()->json([
+            'message' => 'تم حذف الخدمة بنجاح بواسطة الأدمن'
+        ]);
+    }
+
+    // 3) إذا كان المستخدم مقدم خدمة → يتحقق أنه صاحب الخدمة
+    if (Auth::user()->role === 'service_provider') {
+
+        if ($service->provider_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'غير مسموح لك بحذف هذه الخدمة'
+            ], 403);
+        }
+
+        $service->delete();
+
+        return response()->json([
+            'message' => 'تم حذف الخدمة بنجاح'
+        ]);
+    }
+
+    // 4) أي دور آخر → ممنوع
+    return response()->json([
+        'message' => 'غير مسموح لك بتنفيذ هذا الإجراء'
+    ], 403);
+}
+
+
 }
