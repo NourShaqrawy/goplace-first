@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-balance', [BalanceController::class, 'myBalance']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::get('/balances/{userId}', [BalanceController::class, 'show']);
+    Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
 });
 
 //روابط حاصة بالادمن
@@ -55,7 +56,6 @@ Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
 });
 //روابط حاصة بمقدم الخدمة
 Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(function () {
@@ -65,7 +65,6 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
     Route::put('/slots/{id}', [ServiceSlotController::class, 'update']);
     Route::delete('/slots/{id}', [ServiceSlotController::class, 'destroy']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
-    Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
 });
 
 //روابط حاصة بالمستخدم العادي
