@@ -16,7 +16,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services-accept', [ServiceController::class, 'indexApproved']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);
 Route::get('/service-providers/{user_id}/profile', [ServiceProviderProfileController::class, 'show']);
 
@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
     Route::post('/services/{id}/approve', [ServiceController::class, 'approve']);
     Route::get('/topups', [TopupController::class, 'index']);
+    Route::get('/services-notaccept', [ServiceController::class, 'indexNotApproved']);
     Route::put('/topups/{id}/approve', [TopupController::class, 'approve']);
     Route::put('/topups/{id}/reject', [TopupController::class, 'reject']);
     Route::get('/balances', [BalanceController::class, 'index']);

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function indexApproved()
     {
         $services = Service::where('is_approved', true)
             ->get()
@@ -21,7 +21,7 @@ class ServiceController extends Controller
                     'book_price'      => $service->book_price,
                     'city'            => $service->city,
                     'location'        => $service->location,
-                    'time_to_complete'=> $service->time_to_complete,
+                    'time_to_complete' => $service->time_to_complete,
                     'available_days'  => $service->available_days,
                     'available_hours' => $service->available_hours,
                     'provider_id'     => $service->provider_id,
@@ -60,7 +60,7 @@ class ServiceController extends Controller
                 'book_price'      => $service->book_price,
                 'city'            => $service->city,
                 'location'        => $service->location,
-                'time_to_complete'=> $service->time_to_complete,
+                'time_to_complete' => $service->time_to_complete,
                 'available_days'  => $service->available_days,
                 'available_hours' => $service->available_hours,
                 'provider_id'     => $service->provider_id,
@@ -93,7 +93,7 @@ class ServiceController extends Controller
                     'book_price'      => $service->book_price,
                     'city'            => $service->city,
                     'location'        => $service->location,
-                    'time_to_complete'=> $service->time_to_complete,
+                    'time_to_complete' => $service->time_to_complete,
                     'available_days'  => $service->available_days,
                     'available_hours' => $service->available_hours,
                     'provider_id'     => $service->provider_id,
@@ -193,5 +193,42 @@ class ServiceController extends Controller
         $service->save();
 
         return response()->json(['message' => 'Service approved']);
+    }
+    public function indexNotApproved()
+    {
+
+        $user = Auth::user();
+
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $services = Service::where('is_approved', false)
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id'              => $service->id,
+                    'name'            => $service->name,
+                    'description'     => $service->description,
+                    'fullPrice'       => $service->fullPrice,
+                    'book_price'      => $service->book_price,
+                    'city'            => $service->city,
+                    'location'        => $service->location,
+                    'time_to_complete' => $service->time_to_complete,
+                    'available_days'  => $service->available_days,
+                    'available_hours' => $service->available_hours,
+                    'provider_id'     => $service->provider_id,
+                    'category_id'     => $service->category_id,
+                    'is_approved'     => $service->is_approved,
+                    'mainImage'       => $service->main_image_url,
+                    'otherImages'     => $service->other_images_url,
+                    'created_at'      => $service->created_at,
+                    'updated_at'      => $service->updated_at,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'unApproved services list',
+            'data'    => $services,
+        ]);
     }
 }
