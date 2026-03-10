@@ -130,14 +130,18 @@ class ServiceController extends Controller
             'time_to_complete' => 'required|string',
             'available_days'   => 'required|array',
             'available_hours'  => 'required|array',
-            'mainImage'        => 'required|image',
+            'mainImage'        => 'image',
             'otherImages'      => 'array',
             'otherImages.*'    => 'image',
             'category_id'      => 'required|exists:categories,id',
         ]);
 
         // الصورة الرئيسية
-        $mainImagePath = $request->file('mainImage')->store('services', 'public');
+        $mainImagePath = null;
+
+        if ($request->hasFile('mainImage')) {
+            $mainImagePath = $request->file('mainImage')->store('services', 'public');
+        }
 
         // الصور الإضافية
         $otherImagesPaths = [];

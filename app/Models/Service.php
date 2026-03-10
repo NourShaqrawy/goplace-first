@@ -51,6 +51,15 @@ class Service extends Model
     {
         return $this->hasMany(ServiceSlot::class);
     }
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 
     // رابط الصورة الرئيسية
     public function getMainImageUrlAttribute()
@@ -68,7 +77,7 @@ class Service extends Model
         }
 
         return array_map(
-            fn ($img) => asset('storage/' . $img),
+            fn($img) => asset('storage/' . $img),
             $this->other_images
         );
     }
