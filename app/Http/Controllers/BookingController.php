@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use function Termwind\parse;
 
 class BookingController extends Controller
 {
@@ -23,7 +24,7 @@ class BookingController extends Controller
         // التحقق من البيانات
         $request->validate([
             'scheduled_at' => 'required|date|after:now',
-            'amount_paid' => 'required|numeric|min:0',
+            'amount_paid'  => 'required|numeric|min:0',
         ]);
 
         // جلب الخدمة
@@ -40,21 +41,49 @@ class BookingController extends Controller
             return response()->json(['message' => 'لا يمكنك حجز خدمتك الخاصة'], 403);
         }
 
-        // التحقق من أن الوقت ضمن الأيام المتاحة
-        $dayName = now()->parse($request->scheduled_at)->format('l'); // Saturday, Sunday...
-        $dayNameArabic = $this->convertDayToArabic($dayName);
+        /*
+    |--------------------------------------------------------------------------
+    | 1) التحقق من اليوم ضمن نطاق الأيام المتاحة
+    |--------------------------------------------------------------------------
+    */
 
-        if (!in_array($dayNameArabic, $service->available_days)) {
+        // استخراج اليوم من تاريخ الحجز (إنجليزي)
+        $dayNameEnglish = \Carbon\Carbon::parse($request->scheduled_at)->format('l');
+        $dayArabic = $this->convertDayToArabic($dayNameEnglish);
+
+        // توليد نطاق الأيام المتاحة
+        $availableDays = $this->generateDaysRange(
+            $service->available_days[0],
+            $service->available_days[count($service->available_days) - 1]
+        );
+
+        if (!in_array($dayArabic, $availableDays)) {
             return response()->json(['message' => 'اليوم المختار غير متاح للحجز'], 400);
         }
 
-        // التحقق من الساعة المتاحة
-        $hour = now()->parse($request->scheduled_at)->format('H:i');
-        if (!in_array($hour, $service->available_hours)) {
+        /*
+    |--------------------------------------------------------------------------
+    | 2) التحقق من الساعة ضمن نطاق الساعات المتاحة
+    |--------------------------------------------------------------------------
+    */
+
+        $hour = \Carbon\Carbon::parse($request->scheduled_at)->format('H:i');
+
+        $availableHours = $this->generateHoursRange(
+            $service->available_hours[0],
+            $service->available_hours[count($service->available_hours) - 1]
+        );
+
+        if (!in_array($hour, $availableHours)) {
             return response()->json(['message' => 'الساعة المختارة غير متاحة للحجز'], 400);
         }
 
-        // التحقق من عدم وجود حجز سابق لنفس الوقت
+        /*
+    |--------------------------------------------------------------------------
+    | 3) التحقق من عدم وجود حجز سابق لنفس الوقت
+    |--------------------------------------------------------------------------
+    */
+
         $existingBooking = Booking::where('service_id', $service_id)
             ->where('scheduled_at', $request->scheduled_at)
             ->first();
@@ -63,7 +92,12 @@ class BookingController extends Controller
             return response()->json(['message' => 'هذا الموعد محجوز مسبقًا'], 400);
         }
 
-        // التحقق من رصيد المستخدم
+        /*
+    |--------------------------------------------------------------------------
+    | 4) التحقق من رصيد المستخدم
+    |--------------------------------------------------------------------------
+    */
+
         $balance = Balance::firstOrCreate(
             ['user_id' => $user->id],
             ['current_balance' => 0]
@@ -73,13 +107,18 @@ class BookingController extends Controller
             return response()->json(['message' => 'الرصيد غير كافٍ لإتمام الحجز'], 400);
         }
 
-        // جلب رصيد المزود
+        // رصيد المزود
         $providerBalance = Balance::firstOrCreate(
             ['user_id' => $service->provider_id],
             ['current_balance' => 0]
         );
 
-        // تنفيذ العملية داخل Transaction
+        /*
+    |--------------------------------------------------------------------------
+    | 5) تنفيذ عملية الحجز داخل Transaction
+    |--------------------------------------------------------------------------
+    */
+
         DB::beginTransaction();
 
         try {
@@ -93,25 +132,25 @@ class BookingController extends Controller
 
             // إنشاء الحجز
             $booking = Booking::create([
-                'user_id' => $user->id,
-                'service_id' => $service->id,
+                'user_id'      => $user->id,
+                'service_id'   => $service->id,
                 'scheduled_at' => $request->scheduled_at,
-                'amount_paid' => $request->amount_paid,
-                'status' => 'pending',
+                'amount_paid'  => $request->amount_paid,
+                'status'       => 'pending',
             ]);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'تم إنشاء الحجز بنجاح',
-                'data' => $booking,
+                'data'    => $booking,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'حدث خطأ أثناء الحجز', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     // حجوزات المستخدم
     public function myBookings()
@@ -175,5 +214,40 @@ class BookingController extends Controller
             'Thursday' => 'الخميس',
             'Friday' => 'الجمعة',
         ][$day] ?? $day;
+    }
+    private function generateDaysRange($startDay, $endDay)
+    {
+        $days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+        $startIndex = array_search($startDay, $days);
+        $endIndex   = array_search($endDay, $days);
+
+        if ($startIndex === false || $endIndex === false) {
+            return [];
+        }
+
+        if ($startIndex <= $endIndex) {
+            return array_slice($days, $startIndex, $endIndex - $startIndex + 1);
+        }
+
+        // في حال كان النطاق يمر عبر نهاية الأسبوع
+        return array_merge(
+            array_slice($days, $startIndex),
+            array_slice($days, 0, $endIndex + 1)
+        );
+    }
+    private function generateHoursRange($startHour, $endHour)
+    {
+        $start = \Carbon\Carbon::createFromFormat('H:i', $startHour);
+        $end   = \Carbon\Carbon::createFromFormat('H:i', $endHour);
+
+        $hours = [];
+
+        while ($start->lte($end)) {
+            $hours[] = $start->format('H:i');
+            $start->addHour();
+        }
+
+        return $hours;
     }
 }
