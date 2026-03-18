@@ -77,6 +77,8 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
 
     // تحديد وقت الحجز
     Route::post('/bookings/{id}/schedule', [BookingController::class, 'schedule']);
+    Route::post('/bookings/{id}/complete', [BookingController::class, 'complete']);
+
 
     });
 

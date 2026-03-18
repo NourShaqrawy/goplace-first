@@ -20,10 +20,6 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
         // جلب الخدمة
         $service = Service::where('id', $service_id)
             ->where('is_approved', true)
@@ -40,9 +36,9 @@ class BookingController extends Controller
 
         // إنشاء الحجز بدون وقت
         $booking = Booking::create([
-            'user_id'    => $user->id,
-            'service_id' => $service->id,
-            'status'     => 'pending',
+            'user_id'      => $user->id,
+            'service_id'   => $service->id,
+            'status'       => 'pending',
             'scheduled_at' => null,
             'amount_paid'  => null,
         ]);
@@ -155,7 +151,31 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | 5) حجوزات المستخدم
+    | 5) إكمال الحجز (بعد تنفيذ الخدمة)
+    |--------------------------------------------------------------------------
+    */
+    public function complete($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // تحقق أن مقدم الخدمة هو صاحب الخدمة
+        if ($booking->service->provider_id !== Auth::id()) {
+            return response()->json(['message' => 'غير مسموح'], 403);
+        }
+
+        // يجب أن يكون الحجز مؤكد قبل إكماله
+        if ($booking->status !== 'confirmed') {
+            return response()->json(['message' => 'لا يمكن إكمال حجز غير مؤكد'], 400);
+        }
+
+        $booking->update(['status' => 'completed']);
+
+        return response()->json(['message' => 'تم إنهاء الحجز بنجاح']);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6) حجوزات المستخدم
     |--------------------------------------------------------------------------
     */
     public function myBookings()
@@ -169,7 +189,7 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | 6) حجوزات مقدم الخدمة
+    | 7) حجوزات مقدم الخدمة
     |--------------------------------------------------------------------------
     */
     public function providerBookings()

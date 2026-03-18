@@ -11,20 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-      Schema::create('bookings', function (Blueprint $table) {
-    $table->id();
-   
-    $table->foreignId('user_id')->constrained(); 
-   
-    $table->foreignId('service_id')->constrained(); 
-    
-    $table->dateTime('scheduled_at')->nullable(); 
-    $table->decimal('amount_paid', 8, 2)->nullable(); 
-    
-   
-    $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
-    $table->timestamps();
-});
+        Schema::create('bookings', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('service_id')->constrained();
+
+            $table->dateTime('scheduled_at')->nullable(); // ← تعديل مهم
+            $table->decimal('amount_paid', 8, 2)->nullable(); // ← الدفع عند التأكيد فقط
+
+            $table->enum('status', ['pending', 'scheduled', 'confirmed', 'cancelled', 'completed'])
+                ->default('pending');
+
+            $table->timestamps();
+        });
     }
 
     /**
