@@ -18,8 +18,8 @@ return new class extends Migration
    
     $table->foreignId('service_id')->constrained(); 
     
-    $table->dateTime('scheduled_at'); 
-    $table->decimal('amount_paid', 8, 2); 
+    $table->dateTime('scheduled_at')->nullable(); 
+    $table->decimal('amount_paid', 8, 2)->nullable(); 
     
    
     $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');

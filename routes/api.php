@@ -70,15 +70,31 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
     Route::put('/slots/{id}', [ServiceSlotController::class, 'update']);
     Route::delete('/slots/{id}', [ServiceSlotController::class, 'destroy']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
-    Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
-    Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
-});
+    // Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
+    // Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
+    
+    Route::get('/provider/bookings', [BookingController::class, 'providerBookings']);
+
+    // تحديد وقت الحجز
+    Route::post('/bookings/{id}/schedule', [BookingController::class, 'schedule']);
+
+    });
 
 //روابط حاصة بالمستخدم العادي
 Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     Route::post('/topups', [TopupController::class, 'store']);
-        Route::post('/services/{id}/book', [BookingController::class, 'book']);
+
+    // إنشاء طلب حجز
+    Route::post('/services/{id}/book', [BookingController::class, 'store']);
+
+    // حجوزاتي
     Route::get('/my-bookings', [BookingController::class, 'myBookings']);
+
+    // تأكيد الحجز (مع الدفع)
+    Route::post('/bookings/{id}/confirm', [BookingController::class, 'confirm']);
+
+    // إلغاء الحجز
+    Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
 
     Route::post('/services/{id}/comment', [CommentController::class, 'store']);
     Route::put('/comments/{id}', [CommentController::class, 'update']);

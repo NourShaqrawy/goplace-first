@@ -5,27 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\Balance;
 use App\Models\Booking;
 use App\Models\Service;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use function Termwind\parse;
 
 class BookingController extends Controller
 {
-    public function book(Request $request, $service_id)
+    /*
+    |--------------------------------------------------------------------------
+    | 1) إنشاء طلب حجز (بدون تحديد وقت)
+    |--------------------------------------------------------------------------
+    */
+    public function store(Request $request, $service_id)
     {
         $user = Auth::user();
 
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
-
-        // التحقق من البيانات
-        $request->validate([
-            'scheduled_at' => 'required|date|after:now',
-            'amount_paid'  => 'required|numeric|min:0',
-        ]);
 
         // جلب الخدمة
         $service = Service::where('id', $service_id)
@@ -41,83 +38,76 @@ class BookingController extends Controller
             return response()->json(['message' => 'لا يمكنك حجز خدمتك الخاصة'], 403);
         }
 
-        /*
+        // إنشاء الحجز بدون وقت
+        $booking = Booking::create([
+            'user_id'    => $user->id,
+            'service_id' => $service->id,
+            'status'     => 'pending',
+            'scheduled_at' => null,
+            'amount_paid'  => null,
+        ]);
+
+        return response()->json([
+            'message' => 'تم إرسال طلب الحجز بنجاح، بانتظار تحديد التوقيت من مقدم الخدمة',
+            'data'    => $booking,
+        ], 201);
+    }
+
+    /*
     |--------------------------------------------------------------------------
-    | 1) التحقق من اليوم ضمن نطاق الأيام المتاحة
+    | 2) مقدم الخدمة يحدد وقت الحجز
     |--------------------------------------------------------------------------
     */
+    public function schedule(Request $request, $id)
+    {
+        $request->validate([
+            'scheduled_at' => 'required|date|after:now',
+        ]);
 
-        // استخراج اليوم من تاريخ الحجز (إنجليزي)
-        $dayNameEnglish = \Carbon\Carbon::parse($request->scheduled_at)->format('l');
-        $dayArabic = $this->convertDayToArabic($dayNameEnglish);
+        $booking = Booking::findOrFail($id);
 
-        // توليد نطاق الأيام المتاحة
-        $availableDays = $this->generateDaysRange(
-            $service->available_days[0],
-            $service->available_days[count($service->available_days) - 1]
-        );
-
-        if (!in_array($dayArabic, $availableDays)) {
-            return response()->json(['message' => 'اليوم المختار غير متاح للحجز'], 400);
+        // تحقق أن مقدم الخدمة هو صاحب الخدمة
+        if ($booking->service->provider_id !== Auth::id()) {
+            return response()->json(['message' => 'غير مسموح'], 403);
         }
 
-        /*
+        $booking->update([
+            'scheduled_at' => $request->scheduled_at,
+            'status'       => 'scheduled',
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديد التوقيت بنجاح',
+            'data'    => $booking,
+        ]);
+    }
+
+    /*
     |--------------------------------------------------------------------------
-    | 2) التحقق من الساعة ضمن نطاق الساعات المتاحة
+    | 3) المستخدم يؤكد الحجز (مع الدفع)
     |--------------------------------------------------------------------------
     */
+    public function confirm($id)
+    {
+        $booking = Booking::findOrFail($id);
 
-        $hour = \Carbon\Carbon::parse($request->scheduled_at)->format('H:i');
-
-        $availableHours = $this->generateHoursRange(
-            $service->available_hours[0],
-            $service->available_hours[count($service->available_hours) - 1]
-        );
-
-        if (!in_array($hour, $availableHours)) {
-            return response()->json(['message' => 'الساعة المختارة غير متاحة للحجز'], 400);
+        if ($booking->user_id !== Auth::id()) {
+            return response()->json(['message' => 'غير مسموح'], 403);
         }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 3) التحقق من عدم وجود حجز سابق لنفس الوقت
-    |--------------------------------------------------------------------------
-    */
-
-        $existingBooking = Booking::where('service_id', $service_id)
-            ->where('scheduled_at', $request->scheduled_at)
-            ->first();
-
-        if ($existingBooking) {
-            return response()->json(['message' => 'هذا الموعد محجوز مسبقًا'], 400);
+        if (!$booking->scheduled_at) {
+            return response()->json(['message' => 'لا يمكن تأكيد الحجز قبل تحديد التوقيت'], 400);
         }
 
-        /*
-    |--------------------------------------------------------------------------
-    | 4) التحقق من رصيد المستخدم
-    |--------------------------------------------------------------------------
-    */
+        $service = $booking->service;
 
-        $balance = Balance::firstOrCreate(
-            ['user_id' => $user->id],
-            ['current_balance' => 0]
-        );
+        // رصيد المستخدم
+        $balance = Balance::firstOrCreate(['user_id' => Auth::id()]);
+        $providerBalance = Balance::firstOrCreate(['user_id' => $service->provider_id]);
 
         if ($balance->current_balance < $service->book_price) {
-            return response()->json(['message' => 'الرصيد غير كافٍ لإتمام الحجز'], 400);
+            return response()->json(['message' => 'الرصيد غير كافٍ'], 400);
         }
-
-        // رصيد المزود
-        $providerBalance = Balance::firstOrCreate(
-            ['user_id' => $service->provider_id],
-            ['current_balance' => 0]
-        );
-
-        /*
-    |--------------------------------------------------------------------------
-    | 5) تنفيذ عملية الحجز داخل Transaction
-    |--------------------------------------------------------------------------
-    */
 
         DB::beginTransaction();
 
@@ -130,124 +120,66 @@ class BookingController extends Controller
             $providerBalance->current_balance += $service->book_price;
             $providerBalance->save();
 
-            // إنشاء الحجز
-            $booking = Booking::create([
-                'user_id'      => $user->id,
-                'service_id'   => $service->id,
-                'scheduled_at' => $request->scheduled_at,
-                'amount_paid'  => $request->amount_paid,
-                'status'       => 'pending',
+            // تحديث حالة الحجز
+            $booking->update([
+                'status'      => 'confirmed',
+                'amount_paid' => $service->book_price,
             ]);
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'تم إنشاء الحجز بنجاح',
-                'data'    => $booking,
-            ], 201);
+            return response()->json(['message' => 'تم تأكيد الحجز بنجاح']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'حدث خطأ أثناء الحجز', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'حدث خطأ أثناء الدفع'], 500);
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | 4) إلغاء الحجز من المستخدم
+    |--------------------------------------------------------------------------
+    */
+    public function cancel($id)
+    {
+        $booking = Booking::findOrFail($id);
 
-    // حجوزات المستخدم
+        if ($booking->user_id !== Auth::id()) {
+            return response()->json(['message' => 'غير مسموح'], 403);
+        }
+
+        $booking->update(['status' => 'cancelled']);
+
+        return response()->json(['message' => 'تم إلغاء الحجز']);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5) حجوزات المستخدم
+    |--------------------------------------------------------------------------
+    */
     public function myBookings()
     {
-        $user = Auth::user();
-        $bookings = Booking::where('user_id', $user->id)
+        $bookings = Booking::where('user_id', Auth::id())
             ->with('service')
             ->get();
 
         return response()->json($bookings);
     }
 
-    // حجوزات خدمة معينة
-    public function serviceBookings($service_id)
+    /*
+    |--------------------------------------------------------------------------
+    | 6) حجوزات مقدم الخدمة
+    |--------------------------------------------------------------------------
+    */
+    public function providerBookings()
     {
-        $service = Service::findOrFail($service_id);
+        $services = Service::where('provider_id', Auth::id())->pluck('id');
 
-        $bookings = Booking::where('service_id', $service->id)
+        $bookings = Booking::whereIn('service_id', $services)
             ->with('user')
             ->get();
 
         return response()->json($bookings);
-    }
-
-    // تحديث حالة الحجز
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,confirmed,cancelled,completed',
-        ]);
-
-        $booking = Booking::findOrFail($id);
-
-        $booking->status = $request->status;
-        $booking->save();
-
-        return response()->json([
-            'message' => 'تم تحديث حالة الحجز',
-            'data' => $booking,
-        ]);
-    }
-
-    // حذف الحجز
-    public function destroy($id)
-    {
-        $booking = Booking::findOrFail($id);
-        $booking->delete();
-
-        return response()->json(['message' => 'تم حذف الحجز']);
-    }
-
-    // تحويل أيام الإنجليزية إلى العربية
-    private function convertDayToArabic($day)
-    {
-        return [
-            'Saturday' => 'السبت',
-            'Sunday' => 'الأحد',
-            'Monday' => 'الاثنين',
-            'Tuesday' => 'الثلاثاء',
-            'Wednesday' => 'الأربعاء',
-            'Thursday' => 'الخميس',
-            'Friday' => 'الجمعة',
-        ][$day] ?? $day;
-    }
-    private function generateDaysRange($startDay, $endDay)
-    {
-        $days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-
-        $startIndex = array_search($startDay, $days);
-        $endIndex   = array_search($endDay, $days);
-
-        if ($startIndex === false || $endIndex === false) {
-            return [];
-        }
-
-        if ($startIndex <= $endIndex) {
-            return array_slice($days, $startIndex, $endIndex - $startIndex + 1);
-        }
-
-        // في حال كان النطاق يمر عبر نهاية الأسبوع
-        return array_merge(
-            array_slice($days, $startIndex),
-            array_slice($days, 0, $endIndex + 1)
-        );
-    }
-    private function generateHoursRange($startHour, $endHour)
-    {
-        $start = \Carbon\Carbon::createFromFormat('H:i', $startHour);
-        $end   = \Carbon\Carbon::createFromFormat('H:i', $endHour);
-
-        $hours = [];
-
-        while ($start->lte($end)) {
-            $hours[] = $start->format('H:i');
-            $start->addHour();
-        }
-
-        return $hours;
     }
 }
