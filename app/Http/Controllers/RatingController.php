@@ -43,6 +43,7 @@ class RatingController extends Controller
 
         $validated = $request->validate([
             'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
         ]);
 
         $rating = Rating::create([
@@ -50,6 +51,7 @@ class RatingController extends Controller
             'service_id' => $serviceId,
             'booking_id' => $booking->id,
             'stars' => $validated['stars'],
+            'comment' => $validated['comment'] ?? null,
         ]);
 
         return response()->json(['message' => 'تم إضافة التقييم', 'rating' => $rating]);
@@ -66,10 +68,24 @@ class RatingController extends Controller
 
         $validated = $request->validate([
             'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
         ]);
 
         $rating->update($validated);
 
         return response()->json(['message' => 'تم تعديل التقييم', 'rating' => $rating]);
+    }
+
+    // حذف التقييم (المستخدم الخاص او الادمن)
+    public function destroy($id)
+    {
+        $rating = Rating::findOrFail($id);
+
+        if ($rating->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'غير مسموح لك بحذف هذا التقييم'], 403);
+        }
+
+        $rating->delete();
+        return response()->json(['message' => 'تم حذف التقييم بنجاح']);
     }
 }

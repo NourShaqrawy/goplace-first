@@ -24,6 +24,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->unsignedTinyInteger('stars'); // من 1 إلى 5 غالباً
+            $table->text('comment')->nullable(); // merged comments, optional
 
             $table->timestamps();
         });

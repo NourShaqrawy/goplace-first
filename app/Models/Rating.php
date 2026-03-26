@@ -11,7 +11,8 @@ class Rating extends Model
         'user_id',
         'service_id',
         'booking_id',
-        'stars'
+        'stars',
+        'comment'
     ];
 
     public function user()

@@ -7,7 +7,6 @@ use App\Http\Controllers\ServiceProviderProfileController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ServiceSlotController;
 use App\Http\Controllers\BalanceController;
-use App\Http\Controllers\CommentController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\TopupController;
 use Illuminate\Support\Facades\Route;
@@ -21,7 +20,6 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/services-accept', [ServiceController::class, 'indexApproved']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);
 Route::get('/service-providers/{user_id}/profile', [ServiceProviderProfileController::class, 'show']);
-Route::get('/services/{id}/comments', [CommentController::class, 'index']);
 Route::get('/services/{id}/rating-stats', [RatingController::class, 'stats']);
 
 //روابط لتشغيلهبحب تسجيل دخول
@@ -60,7 +58,8 @@ Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
+        Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
+
 });
 //روابط حاصة بمقدم الخدمة
 Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(function () {
@@ -98,11 +97,8 @@ Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     // إلغاء الحجز
     Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
 
-    Route::post('/services/{id}/comment', [CommentController::class, 'store']);
-    Route::put('/comments/{id}', [CommentController::class, 'update']);
-    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
-
-    // التقييمات
+    // التقييمات + تعليق (comment nullable in ratings)
     Route::post('/services/{id}/rate', [RatingController::class, 'store']);
     Route::put('/ratings/{id}', [RatingController::class, 'update']);
+    Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
 });
