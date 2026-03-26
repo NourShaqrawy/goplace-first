@@ -16,9 +16,15 @@ class RatingController extends Controller
         $avg = Rating::where('service_id', $serviceId)->avg('stars');
         $count = Rating::where('service_id', $serviceId)->count();
 
+        $comments = Rating::where('service_id', $serviceId)
+            ->whereNotNull('comment')
+            ->with('user:id,name')
+            ->get(['id', 'stars', 'comment', 'user_id', 'created_at']);
+
         return response()->json([
             'average' => round($avg, 2),
-            'count' => $count
+            'count' => $count,
+            'comments' => $comments
         ]);
     }
 

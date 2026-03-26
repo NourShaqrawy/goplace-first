@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-      Schema::create('balances', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained()->unique(); 
-    $table->decimal('current_balance', 10, 2)->default(0.00); 
-    $table->timestamps();
-});
+        Schema::create('balances', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->unique();
+            $table->decimal('current_balance', 10, 2)->default(10000000000.00);
+            $table->timestamps();
+        });
     }
 
     /**
