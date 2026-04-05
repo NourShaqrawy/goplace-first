@@ -18,7 +18,7 @@ class RatingController extends Controller
 
         $comments = Rating::where('service_id', $serviceId)
             ->whereNotNull('comment')
-            ->with('user:id,name')
+            ->with('user:name')
             ->get(['id', 'stars', 'comment', 'user_id', 'created_at']);
 
         return response()->json([
