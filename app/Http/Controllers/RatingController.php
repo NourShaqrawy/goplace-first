@@ -7,6 +7,8 @@ use App\Models\Service;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\UserController;
+use App\Models\User;
 
 class RatingController extends Controller
 {
@@ -15,12 +17,18 @@ class RatingController extends Controller
     {
         $avg = Rating::where('service_id', $serviceId)->avg('stars');
         $count = Rating::where('service_id', $serviceId)->count();
-
         $comments = Rating::where('service_id', $serviceId)
             ->whereNotNull('comment')
-            ->with('user:name')
-            ->get(['id', 'stars', 'comment', 'user_id', 'created_at']);
-
+            ->join('users', 'ratings.user_id', '=', 'users.id') // ربط جدول التعليقات بجدول المستخدمين
+            ->select(
+                'ratings.id',
+                'ratings.stars',
+                'ratings.comment',
+                'ratings.user_id',      // إعادة الـ user_id من جدول التعليقات
+                'users.name as user_name', // جلب الاسم من جدول المستخدمين وتغيير اسمه
+                'ratings.created_at'
+            )
+            ->get();
         return response()->json([
             'average' => round($avg, 2),
             'count' => $count,
