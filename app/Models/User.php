@@ -55,6 +55,8 @@ class User extends Authenticatable
         ];
     }
 
+    protected $appends = ['image_url'];
+
 
 
     public function balance(): HasOne
