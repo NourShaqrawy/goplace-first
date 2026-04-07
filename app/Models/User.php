@@ -27,6 +27,7 @@ class User extends Authenticatable
         'role',
         'phone',
         'status',
+        'image',
     ];
 
     /**
@@ -80,5 +81,8 @@ class User extends Authenticatable
         return $this->hasMany(Rating::class);
     }
 
-   
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('storage/' . $this->image) : asset('images/default-avatar.png');
+    }
 }

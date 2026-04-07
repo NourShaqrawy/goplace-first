@@ -101,4 +101,5 @@ Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     Route::post('/services/{id}/rate', [RatingController::class, 'store']);
     Route::put('/ratings/{id}', [RatingController::class, 'update']);
     Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
+    Route::post('user/profile-update', [UserController::class, 'update']);
 });

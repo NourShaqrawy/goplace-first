@@ -31,7 +31,7 @@ class CategoryController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            // تخزين الصورة في مجلد public/categories
+          
             $imagePath = $request->file('image')->store('categories', 'public');
         }
 
@@ -62,11 +62,11 @@ class CategoryController extends Controller
         $data = ['name' => $request->name];
 
         if ($request->hasFile('image')) {
-            // حذف الصورة القديمة إذا وجدت
+          
             if ($category->image) {
                 Storage::disk('public')->delete($category->image);
             }
-            // رفع الصورة الجديدة
+            
             $data['image'] = $request->file('image')->store('categories', 'public');
         }
 
