@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Category;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -15,27 +16,33 @@ class CategoryController extends Controller
     public function show($id)
     {
         $category = Category::find($id);
-
         if (!$category) {
             return response()->json(['message' => 'Category not found'], 404);
         }
-
         return response()->json($category);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|unique:categories',
+            'name'  => 'required|string|unique:categories',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // التحقق من الصورة
         ]);
 
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            // تخزين الصورة في مجلد public/categories
+            $imagePath = $request->file('image')->store('categories', 'public');
+        }
+
         $category = Category::create([
-            'name' => $request->name,
+            'name'  => $request->name,
+            'image' => $imagePath,
         ]);
 
         return response()->json([
             'message' => 'Category created successfully',
-            'data' => $category,
+            'data'    => $category,
         ], 201);
     }
 
@@ -48,16 +55,26 @@ class CategoryController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|unique:categories,name,' . $id,
+            'name'  => 'required|string|unique:categories,name,' . $id,
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $category->update([
-            'name' => $request->name,
-        ]);
+        $data = ['name' => $request->name];
+
+        if ($request->hasFile('image')) {
+            // حذف الصورة القديمة إذا وجدت
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+            // رفع الصورة الجديدة
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $category->update($data);
 
         return response()->json([
             'message' => 'Category updated successfully',
-            'data' => $category,
+            'data'    => $category,
         ]);
     }
 
@@ -67,6 +84,11 @@ class CategoryController extends Controller
 
         if (!$category) {
             return response()->json(['message' => 'Category not found'], 404);
+        }
+
+        // حذف ملف الصورة من التخزين قبل حذف السجل
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
         }
 
         $category->delete();

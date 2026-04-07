@@ -8,17 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Category extends Model
 {
 
-    protected $fillable = [
-        'name',
-    ];
+  protected $fillable = [
+    'name',
+    'image'
+];
 
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
+public function getImageUrlAttribute()
+{
+    return $this->image ? asset('storage/' . $this->image) : null;
+}
 
-    public function services(): HasMany
-    {
-        return $this->hasMany(Service::class);
-    }
+protected $appends = ['image_url'];
 }
