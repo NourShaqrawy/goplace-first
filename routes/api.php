@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::get('/balances/{userId}', [BalanceController::class, 'show']);
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
+    Route::post('user/profile-update', [UserController::class, 'update']);
 });
 
 //روابط حاصة بالادمن
@@ -58,8 +59,7 @@ Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-        Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
-
+    Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
 });
 //روابط حاصة بمقدم الخدمة
 Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(function () {
@@ -71,15 +71,13 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
     Route::put('/services/{id}', [ServiceController::class, 'update']);
     // Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
     // Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
-    
+
     Route::get('/provider/bookings', [BookingController::class, 'providerBookings']);
 
     // تحديد وقت الحجز
     Route::post('/bookings/{id}/schedule', [BookingController::class, 'schedule']);
     Route::post('/bookings/{id}/complete', [BookingController::class, 'complete']);
-
-
-    });
+});
 
 //روابط حاصة بالمستخدم العادي
 Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
@@ -101,5 +99,4 @@ Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     Route::post('/services/{id}/rate', [RatingController::class, 'store']);
     Route::put('/ratings/{id}', [RatingController::class, 'update']);
     Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
-    Route::post('user/profile-update', [UserController::class, 'update']);
 });
