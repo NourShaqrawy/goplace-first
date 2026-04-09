@@ -90,7 +90,6 @@ class ServiceController extends Controller
                     'id'               => $service->id,
                     'name'             => $service->name,
                     'is_approved'      => $service->is_approved,
-                    // ... بقية البيانات كما هي في كودك
                 ];
             });
 
@@ -318,6 +317,43 @@ class ServiceController extends Controller
         return response()->json([
             'message' => 'تم تحديث الخدمة بنجاح، وتم تحويلها إلى غير معتمدة بانتظار المراجعة',
             'service' => $service
+        ]);
+    }
+    public function indexNotApproved()
+    {
+
+        $user = Auth::user();
+
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $services = Service::where('is_approved', false)
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id'              => $service->id,
+                    'name'            => $service->name,
+                    'description'     => $service->description,
+                    'fullPrice'       => $service->fullPrice,
+                    'book_price'      => $service->book_price,
+                    'city'            => $service->city,
+                    'location'        => $service->location,
+                    'time_to_complete' => $service->time_to_complete,
+                    'available_days'  => $service->available_days,
+                    'available_hours' => $service->available_hours,
+                    'provider_id'     => $service->provider_id,
+                    'category_id'     => $service->category_id,
+                    'is_approved'     => $service->is_approved,
+                    'mainImage'       => $service->main_image_url,
+                    'otherImages'     => $service->other_images_url,
+                    'created_at'      => $service->created_at,
+                    'updated_at'      => $service->updated_at,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'unApproved services list',
+            'data'    => $services,
         ]);
     }
     public function destroy($id)
