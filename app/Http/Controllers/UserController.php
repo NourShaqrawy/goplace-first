@@ -158,4 +158,5 @@ class UserController extends Controller
             'message' => 'User and balance deleted successfully'
         ]);
     }
+    
 }
