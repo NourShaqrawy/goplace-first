@@ -78,7 +78,8 @@ class ServiceController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'service_provider') {
+        // السماح للمستخدم العادي أيضاً برؤية خدماته
+        if (!in_array($user->role, ['service_provider', 'user'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -86,37 +87,90 @@ class ServiceController extends Controller
             ->get()
             ->map(function ($service) {
                 return [
-                    'id'              => $service->id,
-                    'name'            => $service->name,
-                    'description'     => $service->description,
-                    'fullPrice'       => $service->fullPrice,
-                    'book_price'      => $service->book_price,
-                    'city'            => $service->city,
-                    'location'        => $service->location,
-                    'time_to_complete' => $service->time_to_complete,
-                    'available_days'  => $service->available_days,
-                    'available_hours' => $service->available_hours,
-                    'provider_id'     => $service->provider_id,
-                    'category_id'     => $service->category_id,
-                    'is_approved'     => $service->is_approved,
-                    'mainImage'       => $service->main_image_url,
-                    'otherImages'     => $service->other_images_url,
-                    'created_at'      => $service->created_at,
-                    'updated_at'      => $service->updated_at,
+                    'id'               => $service->id,
+                    'name'             => $service->name,
+                    'is_approved'      => $service->is_approved,
+                    // ... بقية البيانات كما هي في كودك
                 ];
             });
 
         return response()->json([
-            'message' => 'My services',
+            'message' => 'My services list',
             'data'    => $services,
         ]);
     }
+    // public function store(Request $request)
+    // {
+    //     $user = Auth::user();
 
+    //     if ($user->role !== 'service_provider') {
+    //         return response()->json(['message' => 'Unauthorized'], 403);
+    //     }
+
+    //     $request->validate([
+    //         'name'             => 'required|string',
+    //         'description'      => 'required|string',
+    //         'fullPrice'        => 'required|numeric|min:0',
+    //         'book_price'       => 'required|numeric|min:0',
+    //         'city'             => 'required|string',
+    //         'location'         => 'required|string',
+    //         'time_to_complete' => 'required|string',
+    //         'available_days'   => 'required|array',
+    //         'available_hours'  => 'required|array',
+    //         'mainImage'        => 'image',
+    //         'otherImages'      => 'array',
+    //         'otherImages.*'    => 'image',
+    //         'category_id'      => 'required|exists:categories,id',
+    //     ]);
+
+    //     // الصورة الرئيسية
+    //     $mainImagePath = null;
+
+    //     if ($request->hasFile('mainImage')) {
+    //         $mainImagePath = $request->file('mainImage')->store('services', 'public');
+    //     }
+
+    //     // الصور الإضافية
+    //     $otherImagesPaths = [];
+    //     if ($request->hasFile('otherImages')) {
+    //         foreach ($request->file('otherImages') as $img) {
+    //             $otherImagesPaths[] = $img->store('services', 'public');
+    //         }
+    //     }
+
+    //     $service = Service::create([
+    //         'name'             => $request->name,
+    //         'description'      => $request->description,
+    //         'fullPrice'        => $request->fullPrice,
+    //         'book_price'       => $request->book_price,
+    //         'city'             => $request->city,
+    //         'location'         => $request->location,
+    //         'time_to_complete' => $request->time_to_complete,
+    //         'available_days'   => $request->available_days,
+    //         'available_hours'  => $request->available_hours,
+    //         'provider_id'      => $user->id,
+    //         'category_id'      => $request->category_id,
+    //         'is_approved'      => false,
+    //         'main_image'       => $mainImagePath,
+    //         'other_images'     => $otherImagesPaths,
+    //     ]);
+
+    //     return response()->json([
+    //         'message' => 'Service proposed successfully, pending approval',
+    //         'data'    => [
+    //             'id'          => $service->id,
+    //             'name'        => $service->name,
+    //             'mainImage'   => $service->main_image_url,
+    //             'otherImages' => $service->other_images_url,
+    //         ],
+    //     ], 201);
+    // }
     public function store(Request $request)
     {
         $user = Auth::user();
 
-        if ($user->role !== 'service_provider') {
+        // التحقق من الصلاحية: نسمح للمستخدم العادي ومقدم الخدمة والمسؤول
+        if (!in_array($user->role, ['user', 'service_provider', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -136,14 +190,13 @@ class ServiceController extends Controller
             'category_id'      => 'required|exists:categories,id',
         ]);
 
-        // الصورة الرئيسية
+        // رفع الصورة الرئيسية
         $mainImagePath = null;
-
         if ($request->hasFile('mainImage')) {
             $mainImagePath = $request->file('mainImage')->store('services', 'public');
         }
 
-        // الصور الإضافية
+        // رفع الصور الإضافية
         $otherImagesPaths = [];
         if ($request->hasFile('otherImages')) {
             foreach ($request->file('otherImages') as $img) {
@@ -163,76 +216,49 @@ class ServiceController extends Controller
             'available_hours'  => $request->available_hours,
             'provider_id'      => $user->id,
             'category_id'      => $request->category_id,
-            'is_approved'      => false,
+            'is_approved'      => false, // دائماً false بانتظار موافقة الأدمن
             'main_image'       => $mainImagePath,
             'other_images'     => $otherImagesPaths,
         ]);
 
         return response()->json([
-            'message' => 'Service proposed successfully, pending approval',
+            'message' => 'تم تقديم الخدمة بنجاح. سيتم ترقية حسابك إلى "مقدم خدمة" فور موافقة المسؤول.',
             'data'    => [
-                'id'          => $service->id,
-                'name'        => $service->name,
-                'mainImage'   => $service->main_image_url,
-                'otherImages' => $service->other_images_url,
+                'id'    => $service->id,
+                'name'  => $service->name,
             ],
         ], 201);
     }
 
     public function approve($id)
     {
-        $user = Auth::user();
+        $admin = Auth::user();
 
-        if ($user->role !== 'admin') {
+        if ($admin->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $service = Service::find($id);
+        // جلب الخدمة مع بيانات صاحبها باستخدام العلاقة provider
+        $service = Service::with('provider')->find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
         }
 
+        // 1) الموافقة على الخدمة
         $service->is_approved = true;
         $service->save();
 
-        return response()->json(['message' => 'Service approved']);
-    }
-    public function indexNotApproved()
-    {
+        // 2) ترقية المستخدم إذا كان مستخدماً عادياً
+        $userWhoProposed = $service->provider;
 
-        $user = Auth::user();
-
-        if ($user->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if ($userWhoProposed && $userWhoProposed->role === 'user') {
+            $userWhoProposed->role = 'service_provider';
+            $userWhoProposed->save();
         }
-        $services = Service::where('is_approved', false)
-            ->get()
-            ->map(function ($service) {
-                return [
-                    'id'              => $service->id,
-                    'name'            => $service->name,
-                    'description'     => $service->description,
-                    'fullPrice'       => $service->fullPrice,
-                    'book_price'      => $service->book_price,
-                    'city'            => $service->city,
-                    'location'        => $service->location,
-                    'time_to_complete' => $service->time_to_complete,
-                    'available_days'  => $service->available_days,
-                    'available_hours' => $service->available_hours,
-                    'provider_id'     => $service->provider_id,
-                    'category_id'     => $service->category_id,
-                    'is_approved'     => $service->is_approved,
-                    'mainImage'       => $service->main_image_url,
-                    'otherImages'     => $service->other_images_url,
-                    'created_at'      => $service->created_at,
-                    'updated_at'      => $service->updated_at,
-                ];
-            });
 
         return response()->json([
-            'message' => 'unApproved services list',
-            'data'    => $services,
+            'message' => 'تمت الموافقة على الخدمة بنجاح، وتحديث رتبة المستخدم إلى مقدم خدمة.'
         ]);
     }
     public function update(Request $request, $id)

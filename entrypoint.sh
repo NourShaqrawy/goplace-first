@@ -11,7 +11,7 @@ php artisan view:clear
 
 # php artisan migrate
 # php artisan mi:f --seed
-php artisan storage:link
+php artisan storage:link 
 
 
 
