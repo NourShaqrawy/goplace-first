@@ -12,7 +12,6 @@ use App\Http\Controllers\TopupController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 
-//روابط عامة
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -22,7 +21,6 @@ Route::get('/services/{id}', [ServiceController::class, 'show']);
 Route::get('/service-providers/{user_id}/profile', [ServiceProviderProfileController::class, 'show']);
 Route::get('/services/{id}/rating-stats', [RatingController::class, 'stats']);
 
-//روابط لتشغيلهبحب تسجيل دخول
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -41,46 +39,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/balances/{userId}', [BalanceController::class, 'show']);
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
     Route::post('user/profile-update', [UserController::class, 'update']);
-});
-
-//روابط حاصة بالادمن
-Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::put('/categories/{id}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-    Route::post('/services/{id}/approve', [ServiceController::class, 'approve']);
-    Route::get('/topups', [TopupController::class, 'index']);
-    Route::get('/services-notaccept', [ServiceController::class, 'indexNotApproved']);
-    Route::put('/topups/{id}/approve', [TopupController::class, 'approve']);
-    Route::put('/topups/{id}/reject', [TopupController::class, 'reject']);
-    Route::get('/balances', [BalanceController::class, 'index']);
-    Route::post('/balances/{userId}', [BalanceController::class, 'saveBalance']);
-    Route::delete('/balances/{userId}', [BalanceController::class, 'destroy']);
-    Route::get('/users', [UserController::class, 'index']);
-    Route::post('/users', [UserController::class, 'store']);
-    Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
-});
-//روابط حاصة بمقدم الخدمة
-Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(function () {
-    Route::get('/my-profile', [ServiceProviderProfileController::class, 'myProfile']);
-    Route::post('/profile', [ServiceProviderProfileController::class, 'upsert']);
-    Route::post('/services/{id}/slots', [ServiceSlotController::class, 'store']);
-    Route::put('/slots/{id}', [ServiceSlotController::class, 'update']);
-    Route::delete('/slots/{id}', [ServiceSlotController::class, 'destroy']);
-    Route::put('/services/{id}', [ServiceController::class, 'update']);
-    // Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
-    // Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
-
-    Route::get('/provider/bookings', [BookingController::class, 'providerBookings']);
-
-    // تحديد وقت الحجز
-    Route::post('/bookings/{id}/schedule', [BookingController::class, 'schedule']);
-    Route::post('/bookings/{id}/complete', [BookingController::class, 'complete']);
-});
-
-//روابط حاصة بالمستخدم العادي
-Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     Route::post('/topups', [TopupController::class, 'store']);
 
     // إنشاء طلب حجز
@@ -99,4 +57,43 @@ Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
     Route::post('/services/{id}/rate', [RatingController::class, 'store']);
     Route::put('/ratings/{id}', [RatingController::class, 'update']);
     Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'checkrole:admin'])->group(function () {
+    Route::post('/categories', [CategoryController::class, 'store']);
+    Route::put('/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+    Route::post('/services/{id}/approve', [ServiceController::class, 'approve']);
+    Route::get('/topups', [TopupController::class, 'index']);
+    Route::get('/services-notaccept', [ServiceController::class, 'indexNotApproved']);
+    Route::put('/topups/{id}/approve', [TopupController::class, 'approve']);
+    Route::put('/topups/{id}/reject', [TopupController::class, 'reject']);
+    Route::get('/balances', [BalanceController::class, 'index']);
+    Route::post('/balances/{userId}', [BalanceController::class, 'saveBalance']);
+    Route::delete('/balances/{userId}', [BalanceController::class, 'destroy']);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::delete('/ratings/{id}', [RatingController::class, 'destroy']);
+});
+Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(function () {
+    Route::get('/my-profile', [ServiceProviderProfileController::class, 'myProfile']);
+    Route::post('/profile', [ServiceProviderProfileController::class, 'upsert']);
+    Route::post('/services/{id}/slots', [ServiceSlotController::class, 'store']);
+    Route::put('/slots/{id}', [ServiceSlotController::class, 'update']);
+    Route::delete('/slots/{id}', [ServiceSlotController::class, 'destroy']);
+    Route::put('/services/{id}', [ServiceController::class, 'update']);
+    // Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
+    // Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
+
+    Route::get('/provider/bookings', [BookingController::class, 'providerBookings']);
+
+    Route::post('/bookings/{id}/schedule', [BookingController::class, 'schedule']);
+    Route::post('/bookings/{id}/complete', [BookingController::class, 'complete']);
+});
+
+
+//روابط حاصة بالمستخدم العادي
+Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
+    
 });
