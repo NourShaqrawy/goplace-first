@@ -91,10 +91,16 @@ class BookingController extends Controller
         if ($booking->user_id !== Auth::id()) {
             return response()->json(['message' => 'غير مسموح'], 403);
         }
+        
 
         if (!$booking->scheduled_at) {
             return response()->json(['message' => 'لا يمكن تأكيد الحجز قبل تحديد التوقيت'], 400);
         }
+        if (!$booking->status == 'completed' || !$booking->status == 'cancelled') {
+            return response()->json(['message' => 'الخدمة مكملة او تم الغاؤها'], 400);
+        }
+        
+
 
         $service = $booking->service;
 
@@ -144,6 +150,7 @@ class BookingController extends Controller
         if ($booking->user_id !== Auth::id()) {
             return response()->json(['message' => 'غير مسموح'], 403);
         }
+        
 
         $booking->update(['status' => 'cancelled']);
 
@@ -168,6 +175,8 @@ class BookingController extends Controller
         if ($booking->status !== 'confirmed') {
             return response()->json(['message' => 'لا يمكن إكمال حجز غير مؤكد'], 400);
         }
+
+          
 
         $booking->update(['status' => 'completed']);
 
