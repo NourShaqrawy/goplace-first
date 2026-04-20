@@ -56,35 +56,26 @@ class BookingController extends Controller
     */
    public function schedule(Request $request, $id)
 {
-    // 1. التحقق من المدخلات (نتوقع وقت بصيغة 14:30 أو 14:30:00)
+    // 1. التحقق من وجود المدخل فقط (كـ نص)
     $request->validate([
-        'scheduled_at' => 'required|date_format:H:i', 
+        'scheduled_at' => 'required|string', // سيقبل أي نص مثل "14:30" أو "02:00 PM"
     ]);
 
     $booking = Booking::findOrFail($id);
 
-    // 2. التحقق من الصلاحية (أن المستخدم هو صاحب الخدمة)
+    // 2. التحقق من الصلاحية
     if ($booking->service->provider_id !== Auth::id()) {
         return response()->json(['message' => 'غير مسموح'], 403);
     }
 
-    // 3. دمج الوقت المرسل مع تاريخ اليوم الحالي
-    // نستخدم Carbon لإنشاء تاريخ كامل يجمع بين "اليوم" و "الوقت المرسل"
-    $scheduledDateTime = Carbon::createFromFormat('H:i', $request->scheduled_at);
-
-    // 4. (اختياري) التحقق من أن الوقت المختار لم يفت في يومنا هذا
-    if ($scheduledDateTime->isPast()) {
-        return response()->json(['message' => 'لا يمكن اختيار وقت قد مضى اليوم'], 422);
-    }
-
-    // 5. تحديث البيانات
+    // 3. تخزين النص مباشرة كما جاء من Flutter
     $booking->update([
-        'scheduled_at' => $scheduledDateTime, // سيتم تخزينه كـ Datetime كامل
+        'scheduled_at' => $request->scheduled_at, 
         'status'       => 'scheduled',
     ]);
 
     return response()->json([
-        'message' => 'تم تحديد التوقيت بنجاح اليوم',
+        'message' => 'تم حفظ الوقت بنجاح',
         'data'    => $booking,
     ]);
 }

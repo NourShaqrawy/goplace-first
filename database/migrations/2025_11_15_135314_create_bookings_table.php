@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->foreignId('service_id')->constrained();
 
-            $table->dateTime('scheduled_at')->nullable(); // ← تعديل مهم
+            $table->string('scheduled_at')->nullable(); // ← تعديل مهم
             $table->decimal('amount_paid', 8, 2)->nullable(); // ← الدفع عند التأكيد فقط
 
             $table->enum('status', ['pending', 'scheduled', 'confirmed', 'cancelled', 'completed'])
