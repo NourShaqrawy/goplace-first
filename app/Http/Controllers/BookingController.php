@@ -8,7 +8,7 @@ use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-
+use Carbon\Carbon;
 class BookingController extends Controller
 {
     /*
@@ -54,30 +54,40 @@ class BookingController extends Controller
     | 2) مقدم الخدمة يحدد وقت الحجز
     |--------------------------------------------------------------------------
     */
-    public function schedule(Request $request, $id)
-    {
-        $request->validate([
-            'scheduled_at' => 'required|date|after:now',
-        ]);
+   public function schedule(Request $request, $id)
+{
+    // 1. التحقق من المدخلات (نتوقع وقت بصيغة 14:30 أو 14:30:00)
+    $request->validate([
+        'scheduled_at' => 'required|date_format:H:i', 
+    ]);
 
-        $booking = Booking::findOrFail($id);
+    $booking = Booking::findOrFail($id);
 
-        // تحقق أن مقدم الخدمة هو صاحب الخدمة
-        if ($booking->service->provider_id !== Auth::id()) {
-            return response()->json(['message' => 'غير مسموح'], 403);
-        }
-
-        $booking->update([
-            'scheduled_at' => $request->scheduled_at,
-            'status'       => 'scheduled',
-        ]);
-
-        return response()->json([
-            'message' => 'تم تحديد التوقيت بنجاح',
-            'data'    => $booking,
-        ]);
+    // 2. التحقق من الصلاحية (أن المستخدم هو صاحب الخدمة)
+    if ($booking->service->provider_id !== Auth::id()) {
+        return response()->json(['message' => 'غير مسموح'], 403);
     }
 
+    // 3. دمج الوقت المرسل مع تاريخ اليوم الحالي
+    // نستخدم Carbon لإنشاء تاريخ كامل يجمع بين "اليوم" و "الوقت المرسل"
+    $scheduledDateTime = Carbon::createFromFormat('H:i', $request->scheduled_at);
+
+    // 4. (اختياري) التحقق من أن الوقت المختار لم يفت في يومنا هذا
+    if ($scheduledDateTime->isPast()) {
+        return response()->json(['message' => 'لا يمكن اختيار وقت قد مضى اليوم'], 422);
+    }
+
+    // 5. تحديث البيانات
+    $booking->update([
+        'scheduled_at' => $scheduledDateTime, // سيتم تخزينه كـ Datetime كامل
+        'status'       => 'scheduled',
+    ]);
+
+    return response()->json([
+        'message' => 'تم تحديد التوقيت بنجاح اليوم',
+        'data'    => $booking,
+    ]);
+}
     /*
     |--------------------------------------------------------------------------
     | 3) المستخدم يؤكد الحجز (مع الدفع)
