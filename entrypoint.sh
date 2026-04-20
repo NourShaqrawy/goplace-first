@@ -9,8 +9,8 @@ php artisan cache:clear
 php artisan config:clear
 php artisan view:clear
 
-# php artisan migrate
-# php artisan mi:f --seed
+php artisan migrate
+php artisan mi:f --seed
 php artisan storage:link 
 
 
