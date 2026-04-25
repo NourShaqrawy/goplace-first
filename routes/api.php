@@ -83,6 +83,8 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
     Route::put('/slots/{id}', [ServiceSlotController::class, 'update']);
     Route::delete('/slots/{id}', [ServiceSlotController::class, 'destroy']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
+        Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+
     // Route::get('/services/{id}/bookings', [BookingController::class, 'serviceBookings']);
     // Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
 
