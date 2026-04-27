@@ -97,5 +97,6 @@ Route::middleware(['auth:sanctum', 'checkrole:service_provider'])->group(functio
 
 //روابط حاصة بالمستخدم العادي
 Route::middleware(['auth:sanctum', 'checkrole:user'])->group(function () {
-    
+        Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+
 });
