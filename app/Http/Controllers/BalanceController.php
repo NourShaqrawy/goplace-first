@@ -23,13 +23,10 @@ class BalanceController extends Controller
         $balance = Balance::where('user_id', $userId)->first();
 
         if (!$balance) {
-            return response()->json(['message' => 'Balance not found'], 404);
+            return response()->json(['message' => 'Balance is 0', 'balance' => 0], 200);
         }
 
-        return response()->json([
-            'message' => 'Balance retrieved successfully',
-            'data' => $balance
-        ]);
+        return response()->json(['balance' => $balance->amount]);
     }
 
     public function myBalance()
@@ -53,33 +50,33 @@ class BalanceController extends Controller
     }
 
     public function saveBalance(Request $request, $userId)
-{
-    $request->validate([
-        'amount' => 'required|numeric' // يمكن أن تكون موجبة أو سالبة
-    ]);
+    {
+        $request->validate([
+            'amount' => 'required|numeric' // يمكن أن تكون موجبة أو سالبة
+        ]);
 
-    // البحث عن الرصيد أو إنشاؤه إذا لم يوجد
-    $balance = Balance::firstOrCreate(
-        ['user_id' => $userId],
-        ['current_balance' => 0.00]
-    );
+        // البحث عن الرصيد أو إنشاؤه إذا لم يوجد
+        $balance = Balance::firstOrCreate(
+            ['user_id' => $userId],
+            ['current_balance' => 0.00]
+        );
 
-    $newBalance = $balance->current_balance + $request->amount;
+        $newBalance = $balance->current_balance + $request->amount;
 
-    if ($newBalance < 0) {
-        return response()->json(['message' => 'Insufficient balance'], 400);
+        if ($newBalance < 0) {
+            return response()->json(['message' => 'Insufficient balance'], 400);
+        }
+
+        $balance->current_balance = $newBalance;
+        $balance->save();
+
+        return response()->json([
+            'message' => $balance->wasRecentlyCreated
+                ? 'Balance created successfully'
+                : 'Balance updated successfully',
+            'data' => $balance
+        ], $balance->wasRecentlyCreated ? 201 : 200);
     }
-
-    $balance->current_balance = $newBalance;
-    $balance->save();
-
-    return response()->json([
-        'message' => $balance->wasRecentlyCreated 
-            ? 'Balance created successfully' 
-            : 'Balance updated successfully',
-        'data' => $balance
-    ], $balance->wasRecentlyCreated ? 201 : 200);
-}
 
 
     public function destroy($userId)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Topup;
 use App\Models\Balance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class TopupController extends Controller
@@ -23,9 +24,9 @@ class TopupController extends Controller
         }
 
         $topup = Topup::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'amount' => $request->amount,
-            'transaction_id' => $request->method,
+            'transaction_id' => $request->transaction_id,
             'receipt_image' => $path,
             'status' => 'pending',
         ]);
@@ -82,27 +83,26 @@ class TopupController extends Controller
     }
 
     public function index()
-{
-    $topups = Topup::with('user')->latest()->get()->map(function ($topup) {
-        return [
-            'id'            => $topup->id,
-            'user_id'       => $topup->user_id,
-            'amount'        => $topup->amount,
-            'method'        => $topup->method,
-            'receipt_image' => $topup->receipt_image 
-                                ? asset('storage/' . $topup->receipt_image) 
-                                : null,
-            'status'        => $topup->status,
-            'created_at'    => $topup->created_at,
-            'updated_at'    => $topup->updated_at,
-            'user'          => $topup->user,
-        ];
-    });
+    {
+        $topups = Topup::with('user')->latest()->get()->map(function ($topup) {
+            return [
+                'id'            => $topup->id,
+                'user_id'       => $topup->user_id,
+                'amount'        => $topup->amount,
+                'transaction_id'        => $topup->transaction_id,
+                'receipt_image' => $topup->receipt_image
+                    ? asset('storage/' . $topup->receipt_image)
+                    : null,
+                'status'        => $topup->status,
+                'created_at'    => $topup->created_at,
+                'updated_at'    => $topup->updated_at,
+                'user'          => $topup->user,
+            ];
+        });
 
-    return response()->json([
-        'message' => 'All topup requests',
-        'data'    => $topups
-    ]);
-}
-
+        return response()->json([
+            'message' => 'All topup requests',
+            'data'    => $topups
+        ]);
+    }
 }
