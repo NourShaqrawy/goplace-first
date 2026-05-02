@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class Topup extends Model
 {
     protected $fillable = [
-        'user_id', 'amount', 'method', 'receipt_image', 'status'
+        'user_id', 'amount', 'transaction_id', 'receipt_image', 'status'
     ];
 
     public function user()

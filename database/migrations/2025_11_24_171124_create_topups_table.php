@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 10, 2);
-            $table->string('method'); // شركة التحويل أو يدوي
+            $table->string('transaction_id'); // شركة التحويل أو يدوي
             $table->string('receipt_image')->nullable(); // صورة الإشعار
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();

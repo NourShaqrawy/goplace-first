@@ -101,7 +101,7 @@ class BookingController extends Controller
         if (!$booking->status == 'completed' || !$booking->status == 'cancelled') {
             return response()->json(['message' => 'الخدمة مكملة او تم الغاؤها'], 400);
         }
-
+    
 
 
         $service = $booking->service;
