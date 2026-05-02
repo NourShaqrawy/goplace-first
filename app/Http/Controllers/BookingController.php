@@ -85,6 +85,7 @@ class BookingController extends Controller
     | 3) المستخدم يؤكد الحجز (مع الدفع)
     |--------------------------------------------------------------------------
     */
+
     public function confirm($id)
     {
         $booking = Booking::findOrFail($id);

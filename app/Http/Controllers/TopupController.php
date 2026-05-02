@@ -13,7 +13,7 @@ class TopupController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'method' => 'required|string',
+            'transaction_id' => 'required|string',
             'receipt_image' => 'nullable|image|max:2048'
         ]);
 
@@ -25,7 +25,7 @@ class TopupController extends Controller
         $topup = Topup::create([
             'user_id' => auth()->id(),
             'amount' => $request->amount,
-            'method' => $request->method,
+            'transaction_id' => $request->method,
             'receipt_image' => $path,
             'status' => 'pending',
         ]);
